@@ -5,7 +5,7 @@ import RPi.GPIO as GPIO
 import time
 import socket
 import threading
-import os 
+import os
 
 GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BOARD)
@@ -14,6 +14,8 @@ GPIO.setup(11, GPIO.OUT)
 GPIO.setup(7, GPIO.OUT)
 
 data = ""
+listen_IP = ""
+listen_port = ""
 
 url = ["Status Anzeigen", "Space oeffnen", "Space schliessen"]
 with open("/home/pi/spaceOpenCloseButton/token.conf", "r") as token_raw:
@@ -40,7 +42,7 @@ with open("/home/pi/spaceOpenCloseButton/token.conf", "r") as token_raw:
 jsonurl = urlopen(url[0])
 
 def rec_UDP():
-    global data
+    global data, listen_IP, listen_port
     while True:
        	# UDP commands for listening
        	sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -103,4 +105,4 @@ except KeyboardInterrupt:
 	print("\nExiting ...\n")
 	GPIO.output(11,0)
 	GPIO.output(7,0)
-	os._exit(0)	
+	os._exit(0)
