@@ -39,7 +39,6 @@ with open("/home/pi/spaceOpenCloseButton/token.conf", "r") as token_raw:
             else:
                 pass
     url = [url_tmp + 'space=' + space + '&state=show', url_tmp + 'space=' + space + '&token=' + token + '&state=open', url_tmp + 'space=' + space + '&token=' + token + '&state=closed']
-jsonurl = urlopen(url[0])
 
 def rec_UDP():
     global data, listen_IP, listen_port
@@ -55,34 +54,34 @@ def do_server_query(action):
 	jsoncontent = json.loads(bytes.decode(jsonurl.read()))
 	return jsoncontent["status"]
 
-currentstatus = do_server_query(0)
-print("Startstatus:",currentstatus)
+def update_led_status_open():
+    print("led status is open")
+    GPIO.output(11, 0)
+    GPIO.output(7, 1)
+
+def update_led_status_close():
+    print("led status is closed")
+    GPIO.output(7, 0)
+    GPIO.output(11, 1)
+
+def update_led_status(server_status):
+    if server_status == "open":
+        update_led_status_open()
+    elif server_status == "closed":
+        update_led_status_close()
 
 def togglespace():
-
-	jsonurl = urlopen(url[0])
-	jsoncontent = json.loads(bytes.decode(jsonurl.read()))
-	if jsoncontent["status"] == "open":
-		print("see-base is now:", do_server_query(2))
-		GPIO.output(11, 1)
-		GPIO.output(7, 0)
-	elif jsoncontent["status"] == "closed":
-		print("see-base is now:", do_server_query(1))
-		GPIO.output(7, 1)
-		GPIO.output(11, 0)
-
-if do_server_query(0) == "open":
-        print("status from server is open")
-        GPIO.output(11, 0)
-        GPIO.output(7, 1)
-        currentstatus = "open"
-elif do_server_query(0) == "closed":
-        print("status from server is closed")
-        GPIO.output(7, 0)
-        GPIO.output(11, 1)
-        currentstatus = "closed"
+    server_status = do_server_query(0)
+	if server_status == "open":
+		print("space is now:", do_server_query(2))
+	elif server_status == "closed":
+		print("space is now:", do_server_query(1))
+    update_led_status(server_status)
 
 try:
+    # get current state as initial state from server
+    update_led_status(do_server_query(0))
+
 	listen_UDP = threading.Thread(target=rec_UDP)
 	listen_UDP.start()
 	print("Schleife start")
@@ -92,14 +91,7 @@ try:
 			togglespace()
 			time.sleep(0.5)
 		if "change" in str(data):
-			if do_server_query(0) == "open":
-				print("status from server is open")
-				GPIO.output(11, 0)
-				GPIO.output(7, 1)
-			elif do_server_query(0) == "closed":
-				print("status from server is closed")
-				GPIO.output(7, 0)
-				GPIO.output(11, 1)
+			update_led_status(do_server_query(0))
 		data=""
 except KeyboardInterrupt:
 	print("\nExiting ...\n")
