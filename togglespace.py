@@ -76,6 +76,8 @@ def togglespace():
         print("space is now:", do_server_query(2))
     elif server_status == "closed":
         print("space is now:", do_server_query(1))
+    # get the new status
+    server_status = do_server_query(0)
     update_led_status(server_status)
 
 try:
