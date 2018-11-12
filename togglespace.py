@@ -43,16 +43,16 @@ with open("/home/pi/spaceOpenCloseButton/token.conf", "r") as token_raw:
 def rec_UDP():
     global data, listen_IP, listen_port
     while True:
-       	# UDP commands for listening
-       	sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-       	sock.bind((listen_IP, listen_port))
-       	data, addr = sock.recvfrom(1024)
-       	print("received message:", data)
+        # UDP commands for listening
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.bind((listen_IP, listen_port))
+        data, addr = sock.recvfrom(1024)
+        print("received message:", data)
 
 def do_server_query(action):
-	jsonurl = urlopen(url[action])
-	jsoncontent = json.loads(bytes.decode(jsonurl.read()))
-	return jsoncontent["status"]
+    jsonurl = urlopen(url[action])
+    jsoncontent = json.loads(bytes.decode(jsonurl.read()))
+    return jsoncontent["status"]
 
 def update_led_status_open():
     print("led status is open")
@@ -72,29 +72,29 @@ def update_led_status(server_status):
 
 def togglespace():
     server_status = do_server_query(0)
-	if server_status == "open":
-		print("space is now:", do_server_query(2))
-	elif server_status == "closed":
-		print("space is now:", do_server_query(1))
+    if server_status == "open":
+        print("space is now:", do_server_query(2))
+    elif server_status == "closed":
+        print("space is now:", do_server_query(1))
     update_led_status(server_status)
 
 try:
     # get current state as initial state from server
     update_led_status(do_server_query(0))
 
-	listen_UDP = threading.Thread(target=rec_UDP)
-	listen_UDP.start()
-	print("Schleife start")
-	while True:
-		time.sleep(0.1)
-		if GPIO.input(15) == GPIO.LOW:
-			togglespace()
-			time.sleep(0.5)
-		if "change" in str(data):
-			update_led_status(do_server_query(0))
-		data=""
+    listen_UDP = threading.Thread(target=rec_UDP)
+    listen_UDP.start()
+    print("Schleife start")
+    while True:
+        time.sleep(0.1)
+        if GPIO.input(15) == GPIO.LOW:
+            togglespace()
+            time.sleep(0.5)
+        if "change" in str(data):
+            update_led_status(do_server_query(0))
+        data=""
 except KeyboardInterrupt:
-	print("\nExiting ...\n")
-	GPIO.output(11,0)
-	GPIO.output(7,0)
-	os._exit(0)
+    print("\nExiting ...\n")
+    GPIO.output(11,0)
+    GPIO.output(7,0)
+    os._exit(0)
