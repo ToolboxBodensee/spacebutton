@@ -1,0 +1,13 @@
+[Unit]
+Description=spacestatus service
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 /home/pi/spaceOpenCloseButton/togglespace.py
+Type=simple
+Restart=always
+
+[Install]
+WantedBy=default.target
+
+
