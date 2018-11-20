@@ -6,6 +6,7 @@ import time
 import socket
 import threading
 import os
+import sys
 
 GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BOARD)
@@ -64,11 +65,12 @@ def update_led_status_close():
     GPIO.output(7, 0)
     GPIO.output(11, 1)
 
-def update_led_status(server_status):
+def update_space_status(server_status):
     if server_status == "open":
         update_led_status_open()
     elif server_status == "closed":
         update_led_status_close()
+    os.system("{}/on_update_space_status.sh {}".format(os.path.dirname(sys.argv[0]),server_status))
 
 def togglespace():
     server_status = do_server_query(0)
@@ -78,11 +80,11 @@ def togglespace():
         print("space is now:", do_server_query(1))
     # get the new status
     server_status = do_server_query(0)
-    update_led_status(server_status)
+    update_space_status(server_status)
 
 try:
     # get current state as initial state from server
-    update_led_status(do_server_query(0))
+    update_space_status(do_server_query(0))
 
     listen_UDP = threading.Thread(target=rec_UDP)
     listen_UDP.start()
@@ -93,7 +95,7 @@ try:
             togglespace()
             time.sleep(0.5)
         if "change" in str(data):
-            update_led_status(do_server_query(0))
+            update_space_status(do_server_query(0))
         data=""
 except KeyboardInterrupt:
     print("\nExiting ...\n")
