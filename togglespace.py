@@ -89,8 +89,14 @@ try:
     listen_UDP = threading.Thread(target=rec_UDP)
     listen_UDP.start()
     print("Schleife start")
+    loop_counter = 0
     while True:
         time.sleep(0.1)
+        loop_counter += 1
+        if loop_counter >= 50:
+            # pull state every 5sec
+            loop_counter = 0
+            update_space_status(do_server_query(0))
         if GPIO.input(15) == GPIO.LOW:
             togglespace()
             time.sleep(0.5)
