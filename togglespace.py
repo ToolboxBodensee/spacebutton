@@ -1,6 +1,5 @@
 #!/usr/bin/python3
-import json
-from urllib.request import urlopen
+import requests
 import RPi.GPIO as GPIO
 import time
 import socket
@@ -18,13 +17,14 @@ data = ""
 listen_IP = ""
 listen_port = ""
 
-url = ["Status Anzeigen", "Space oeffnen", "Space schliessen"]
+showState = ''
+openSpace = ''
+closeSpace = ''
 with open("/home/pi/spaceOpenCloseButton/token.conf", "r") as token_raw:
-    space, token, url_tmp = "","",""
+    space, token, url_tmp = "", "", ""
     for line in token_raw.readlines():
-        if line[0] == '#':
-            pass # Ist ein Kommentar
-        else:
+        # Ist kein Kommentar
+        if not line.startswith('#'):
             line = line.replace('\n', '')
             key, value = line.split('=')
             if key == 'space':
@@ -37,9 +37,10 @@ with open("/home/pi/spaceOpenCloseButton/token.conf", "r") as token_raw:
                 listen_IP = value
             elif key == 'listen_port':
                 listen_port = int(value)
-            else:
-                pass
-    url = [url_tmp + 'space=' + space + '&state=show', url_tmp + 'space=' + space + '&token=' + token + '&state=open', url_tmp + 'space=' + space + '&token=' + token + '&state=closed']
+
+    showState = url_tmp + 'space=' + space + '&state=show'
+    openSpace = url_tmp + 'space=' + space + '&token=' + token + '&state=open'
+    closeSpace = url_tmp + 'space=' + space + '&token=' + token + '&state=closed'
 
 def rec_UDP():
     global data, listen_IP, listen_port
@@ -51,8 +52,7 @@ def rec_UDP():
         print("received message:", data)
 
 def do_server_query(action):
-    jsonurl = urlopen(url[action])
-    jsoncontent = json.loads(bytes.decode(jsonurl.read()))
+    jsoncontent = requests.get(action).json()
     return jsoncontent["status"]
 
 def update_led_status_open():
@@ -70,21 +70,21 @@ def update_space_status(server_status):
         update_led_status_open()
     elif server_status == "closed":
         update_led_status_close()
-    os.system("{}/on_update_space_status.sh {}".format(os.path.dirname(sys.argv[0]),server_status))
+    os.system("{}/on_update_space_status.sh {}".format(os.path.dirname(sys.argv[0]), server_status))
 
 def togglespace():
-    server_status = do_server_query(0)
+    server_status = do_server_query(showState)
     if server_status == "open":
-        print("space is now:", do_server_query(2))
+        print("space is now:", do_server_query(closeSpace))
     elif server_status == "closed":
-        print("space is now:", do_server_query(1))
+        print("space is now:", do_server_query(openSpace))
     # get the new status
-    server_status = do_server_query(0)
+    server_status = do_server_query(showState)
     update_space_status(server_status)
 
 try:
     # get current state as initial state from server
-    update_space_status(do_server_query(0))
+    update_space_status(do_server_query(showState))
 
     listen_UDP = threading.Thread(target=rec_UDP)
     listen_UDP.start()
@@ -96,13 +96,13 @@ try:
         if loop_counter >= 50:
             # pull state every 5sec
             loop_counter = 0
-            update_space_status(do_server_query(0))
+            update_space_status(do_server_query(showState))
         if GPIO.input(15) == GPIO.LOW:
             togglespace()
             time.sleep(0.5)
         if "change" in str(data):
-            update_space_status(do_server_query(0))
-        data=""
+            update_space_status(do_server_query(showState))
+        data = ""
 except KeyboardInterrupt:
     print("\nExiting ...\n")
     GPIO.output(11,0)
